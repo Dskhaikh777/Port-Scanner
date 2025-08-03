@@ -1,6 +1,28 @@
 import socket
 import argparse
 import sys
+from datetime import datetime
+
+
+def scan_port(host, port):
+    try:
+        # create a new socket obj
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # timeout for the connection attempt
+        socket.setdefaulttimeout(0.5)
+
+        # attempt to connect
+        result = s.connect_ex((host, port))
+        if result == 0:
+            return True
+        s.close()
+    except (socket.error, KeyboardInterrupt):
+        print("\nExiting program.")
+        sys.exit()
+    return False
+
+
 
 def main():
     # parser object
@@ -27,7 +49,28 @@ def main():
         ports_to_scan = range(start_port, end_port + 1)
     else:
         ports_to_scan = [int(p.strip()) for p in args.ports.split(',')]
-    print(f"Scanning {target_ip}...")
+    
+    
+    print("-" * 50)
+    print(f"Scanning target: {target_ip}")
+    print(f"Time started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("-" * 50)
+
+    try:
+        for port in ports_to_scan:
+            if scan_port(target_ip, port):
+                try:
+                    service = socket.getservbyport(port, 'tcp')
+                    print(f"Port {port}: \033[92mOpen\033[0m   Service: {service}")
+                except OSError:
+                    # If the service is not found, just print that it's open
+                    print(f"Port {port}: \033[92mOpen\033[0m")
+    except KeyboardInterrupt:
+        print("\nScan stopped by user.")
+        sys.exit()
+    
+    print("-" * 50)
+    print("Scan finished.")
 
 
 if __name__ == "__main__":
